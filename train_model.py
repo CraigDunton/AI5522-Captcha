@@ -59,6 +59,7 @@ eval_labels = lb.transform(eval_labels)
 # encode labels into ints to be decoded later
 encoder = LabelEncoder()
 train_labels = encoder.fit_transform(train_labels)
+eval_labels = encoder.fit_transform(eval_labels)
 
 # Build the model **TODO: PLAY WITH HYPERPARAMETERS**
 def cnn_model_fn(features, labels, mode):
@@ -121,8 +122,10 @@ def cnn_model_fn(features, labels, mode):
 
     print("flatten")
     # flatten to 1d... unsure what shape conv3 is though
-    shape = conv3.get_shape()
-    conv3_flat = tf.reshape(conv3, [-1, shape.num_elements()])
+    # shape = conv3.get_shape()
+    # print(shape.num_elements()) => 160
+    # TODO: make sure this is reshaped correctly
+    conv3_flat = tf.reshape(conv3, [-1, 160])
 
     print("1000 neuron dense")
     # 1000 neuron dense
@@ -137,7 +140,7 @@ def cnn_model_fn(features, labels, mode):
     print("36 neuron logit layer")
     # 26 softmax (may need to be 36 for numbers too)
     # use softmax activation here?
-    logits = tf.layers.dense(inputs=dense2, units=32, activation=tf.nn.softmax)
+    logits = tf.layers.dense(inputs=dense2, units=32)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -155,7 +158,7 @@ def cnn_model_fn(features, labels, mode):
 
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
         train_op = optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step())
@@ -187,3 +190,12 @@ classifier.train(
     input_fn=train_input_fn,
     steps=20000,
     hooks=[logging_hook])
+
+# Evaluate the model and print results
+eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"x": eval_data},
+    y=eval_labels,
+    num_epochs=1,
+    shuffle=False)
+eval_results = classifier.evaluate(input_fn=eval_input_fn)
+print(eval_results)
