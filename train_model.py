@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.preprocessing import LabelEncoder
 
+tf.logging.set_verbosity(tf.logging.INFO)
+
 LETTERS_FOLDER = "extracted_letter_images"
 MODEL_FILENAME = "captcha_model.hdf5" # file extension may be different depending on how tensorflow saves them
 #MODEL_LABELS_FILENAME = "model_labels.dat"
@@ -149,9 +151,6 @@ def cnn_model_fn(features, labels, mode):
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
     # Calculate Loss (for both TRAIN and EVAL modes)
-    #labels = tf.reshape(labels, [-1, 1])
-    print("Labels: ", labels)
-    print("Logits: ", logits)
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
 
     # Configure the Training Op (for TRAIN mode)
