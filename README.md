@@ -25,6 +25,8 @@ python3 extract_single_letters_from_captchas.py
 
 The results will be stored in the "extracted_letter_images" folder.
 
+**Note: you only need to run this once**
+
 
 ### Step 3: Train the neural network to recognize single letters
 
