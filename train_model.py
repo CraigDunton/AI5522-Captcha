@@ -41,7 +41,7 @@ print("done")
 # split into training and test data (is this k folding?)
 # might be a good idea to play w test_size
 print("split into training and test data")
-(X_train, X_test, Y_train, Y_test) = train_test_split(data, labels, test_size=0.25, random_state=0)
+(X_train, X_test, Y_train, Y_test) = train_test_split(data, labels, test_size=0.25, random_state=0) # maybe .1 test_size
 
 # turn into numpy arrays for tf
 train_data = np.array(X_train)
@@ -228,22 +228,35 @@ sess = tf.InteractiveSession()
 
 # Input placeholders
 with tf.name_scope('input'):
-    x = tf.placeholder(tf.float32, [29058, 20, 20], name='x-input')
+    x = tf.placeholder(tf.float32, [None, 20, 20], name='x-input') # size determined by the dataset
     y_ = tf.placeholder(tf.int64, [None], name='y-input')
     keep_prob = tf.placeholder(tf.float32)
 
-feed_dict = {x: train_data, y_: train_labels, keep_prob: 1.0}
-steps = 250 # was 2000
+#feed_dict = {x: train_data, y_: train_labels, keep_prob: 1.0}
+
+def feed_dict(train):
+    """Make a TensorFlow feed_dict: maps data onto Tensor placeholders."""
+    if train:
+        xs = train_data
+        ys = train_labels
+        k = 1.0
+    else:
+        xs = eval_data
+        ys = eval_labels
+        k = 1.0
+    return {x: xs, y_: ys, keep_prob: k}
+
+steps = 180 # was 2000, then 250
 
 # merge summaries
 merged = tf.summary.merge_all()
 train_writer = tf.summary.FileWriter("logs/train", sess.graph)
-test_writer = tf.summary.FileWriter("logs/test") #shouldn't need this
+test_writer = tf.summary.FileWriter("logs/test")
 tf.global_variables_initializer().run()
 
 for i in range(steps):
     if i % 10 == 0:  # Record summaries and test-set accuracy
-      summary, acc = sess.run([merged, accuracy], feed_dict=feed_dict)
+      summary, acc = sess.run([merged, accuracy], feed_dict=feed_dict(False))
       test_writer.add_summary(summary, i)
       print('Accuracy at step %s: %s' % (i, acc))
     else:  # Record train set summaries, and train
@@ -251,14 +264,14 @@ for i in range(steps):
         run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
         run_metadata = tf.RunMetadata()
         summary, _ = sess.run([merged, train_step],
-                              feed_dict=feed_dict,
+                              feed_dict=feed_dict(True),
                               options=run_options,
                               run_metadata=run_metadata)
         train_writer.add_run_metadata(run_metadata, 'step%d' % i)
         train_writer.add_summary(summary, i)
         print('Adding run metadata for', i)
       else:  # Record a summary
-        summary, _ = sess.run([merged, train_step], feed_dict=feed_dict)
+        summary, _ = sess.run([merged, train_step], feed_dict=feed_dict(True))
         train_writer.add_summary(summary, i)
 
 train_writer.close()
